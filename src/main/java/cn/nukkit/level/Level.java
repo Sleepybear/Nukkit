@@ -2023,10 +2023,6 @@ public class Level implements ChunkManager, Metadatable {
             return null;
         }
 
-        if (target.getId() == Item.AIR) {
-            return null;
-        }
-
         if (player != null) {
             PlayerInteractEvent ev = new PlayerInteractEvent(player, item, target, face,
                     target.getId() == 0 ? Action.RIGHT_CLICK_AIR : Action.RIGHT_CLICK_BLOCK);
@@ -2199,7 +2195,10 @@ public class Level implements ChunkManager, Metadatable {
                     for (Entity ent : this.getChunkEntities(x, z, false).values()) {
                         if ((entity == null || (ent != entity && entity.canCollideWith(ent)))
                                 && ent.boundingBox.intersectsWith(bb)) {
-                            nearby.add(ent);
+                            if(!(ent instanceof Player && ( (Player) ent ).isSpectator())) {
+                                nearby.add(ent);
+                            }
+
                         }
                     }
                 }

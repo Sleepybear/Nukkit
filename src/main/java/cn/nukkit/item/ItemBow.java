@@ -70,6 +70,11 @@ public class ItemBow extends ItemTool {
             damage += 0.25 * (bowDamage.getLevel() + 1);
         }
 
+        boolean knock = true;
+        if (this.getEnchantment(Enchantment.ID_BOW_KNOCKBACK) == null) {
+            knock = false;
+        }
+
         Enchantment flameEnchant = this.getEnchantment(Enchantment.ID_BOW_FLAME);
         boolean flame = flameEnchant != null && flameEnchant.getLevel() > 0;
 
@@ -86,12 +91,13 @@ public class ItemBow extends ItemTool {
                         .add(new FloatTag("", (player.yaw > 180 ? 360 : 0) - (float) player.yaw))
                         .add(new FloatTag("", (float) -player.pitch)))
                 .putShort("Fire", flame ? 45 * 60 : 0)
+                .putBoolean("knock", knock)
                 .putDouble("damage", damage);
 
         double p = (double) ticksUsed / 20;
-        double f = Math.min((p * p + p * 2) / 3, 1) * 2;
+        double f = Math.min((p * p + p * 2) / 3, 1) * 3;
 
-        EntityArrow arrow = (EntityArrow) Entity.createEntity("Arrow", player.chunk, nbt, player, f == 2);
+        EntityArrow arrow = (EntityArrow) Entity.createEntity("Arrow", player.chunk, nbt, player, f == 3);
 
         if (arrow == null) {
             return false;

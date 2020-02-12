@@ -6,6 +6,7 @@ import cn.nukkit.block.Block;
 import cn.nukkit.block.BlockMagma;
 import cn.nukkit.entity.data.ShortEntityData;
 import cn.nukkit.entity.passive.EntityWaterAnimal;
+import cn.nukkit.entity.projectile.EntityArrow;
 import cn.nukkit.event.entity.EntityDamageByChildEntityEvent;
 import cn.nukkit.event.entity.EntityDamageByEntityEvent;
 import cn.nukkit.event.entity.EntityDamageEvent;
@@ -13,6 +14,7 @@ import cn.nukkit.event.entity.EntityDamageEvent.DamageCause;
 import cn.nukkit.event.entity.EntityDeathEvent;
 import cn.nukkit.item.Item;
 import cn.nukkit.item.ItemTurtleShell;
+import cn.nukkit.item.enchantment.Enchantment;
 import cn.nukkit.level.GameRule;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.math.Vector3;
@@ -159,26 +161,48 @@ public abstract class EntityLiving extends Entity implements EntityDamageable {
 
     public void knockBack(Entity attacker, double damage, double x, double z, double base) {
         double f = Math.sqrt(x * x + z * z);
-        if (f <= 0) {
-            return;
+        if (f > 0.0D) {
+            f = 1.0D / f;
+            Vector3 motion = new Vector3(this.motionX, this.motionY, this.motionZ);
+            motion.x /= 2.0D;
+            motion.y /= 2.0D;
+            motion.z /= 2.0D;
+            motion.x += x * f * base;
+            motion.y += base;
+            motion.z += z * f * base;
+            if (motion.y > 0.4000000059604645D) {
+                motion.y = 0.4000000059604645D;
+            }
+
+            int i = 0;
+            if (attacker instanceof Player) {
+                Player player = (Player)attacker;
+                Enchantment[] var15 = player.getInventory().getItemInHand().getEnchantments();
+                int var16 = var15.length;
+
+                for(int var17 = 0; var17 < var16; ++var17) {
+                    Enchantment enchantment = var15[var17];
+                    if (enchantment.id == 12) {
+                        i = 1;
+                    }
+                }
+            }
+
+            if (attacker instanceof EntityArrow) {
+                EntityArrow entityArrow = (EntityArrow)attacker;
+                if (entityArrow.namedTag.getBoolean("knock")) {
+                    i = 1;
+                }
+            }
+
+            if (i > 0) {
+                motion.x += -Math.sin(attacker.getLocation().getYaw() * 3.1415927410125732D / 180.0D) * 1.0D * 0.2D;
+                motion.y += 0.08D;
+                motion.z += Math.cos(attacker.getLocation().getYaw() * 3.1415927410125732D / 180.0D) * 1.0D * 0.2D;
+            }
+
+            this.setMotion(motion);
         }
-
-        f = 1 / f;
-
-        Vector3 motion = new Vector3(this.motionX, this.motionY, this.motionZ);
-
-        motion.x /= 2d;
-        motion.y /= 2d;
-        motion.z /= 2d;
-        motion.x += x * f * base;
-        motion.y += base;
-        motion.z += z * f * base;
-
-        if (motion.y > base) {
-            motion.y = base;
-        }
-
-        this.setMotion(motion);
     }
 
     @Override
