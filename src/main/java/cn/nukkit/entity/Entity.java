@@ -1025,6 +1025,8 @@ public abstract class Entity extends Location implements Metadatable {
         }
         setLastDamageCause(source);
         setHealth(getHealth() - source.getFinalDamage());
+
+        System.out.println(source.getFinalDamage());
         return true;
     }
 

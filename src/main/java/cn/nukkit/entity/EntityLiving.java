@@ -146,7 +146,6 @@ public abstract class EntityLiving extends Entity implements EntityDamageable {
             pk.eid = this.getId();
             pk.event = this.getHealth() <= 0 ? EntityEventPacket.DEATH_ANIMATION : EntityEventPacket.HURT_ANIMATION;
             Server.broadcastPacket(this.hasSpawned.values(), pk);
-
             this.attackTime = source.getAttackCooldown();
 
             return true;
@@ -170,6 +169,7 @@ public abstract class EntityLiving extends Entity implements EntityDamageable {
             motion.x += x * f * base;
             motion.y += base;
             motion.z += z * f * base;
+
             if (motion.y > 0.4000000059604645D) {
                 motion.y = 0.4000000059604645D;
             }

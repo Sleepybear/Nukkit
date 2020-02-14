@@ -1830,6 +1830,10 @@ public class Level implements ChunkManager, Metadatable {
         return useBreakOn(vector, null, item, player, createParticles, false);
     }
 
+    public Item useBreakOn(Vector3 vector, BlockFace face, Item item, Player player, boolean createParticles) {
+        return this.useBreakOn(vector, face, item, player, createParticles, true);
+    }
+
     public Item useBreakOn(Vector3 vector, BlockFace face, Item item, Player player, boolean createParticles, boolean dropItem) {
         if (player != null && player.getGamemode() > 2) {
             return null;

@@ -3166,6 +3166,8 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                                         entityDamageByEntityEvent.setCancelled();
                                     }
 
+                                    System.out.println("Erkam is doof");
+
                                     if (!target.attack(entityDamageByEntityEvent)) {
                                         if (item.isTool() && this.isSurvival()) {
                                             this.inventory.sendContents(this);
@@ -3940,6 +3942,10 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             pk.entityId = this.id;
             this.dataPacket(pk);
         }
+    }
+
+    public void setAbsoluteMaxHealth(int maxHealth) {
+        super.setMaxHealth(maxHealth);
     }
 
     public int getExperience() {

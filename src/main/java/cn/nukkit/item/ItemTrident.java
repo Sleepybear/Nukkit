@@ -43,6 +43,9 @@ public class ItemTrident extends ItemTool {
     
     @Override
     public int getAttackDamage() {
+        if(this.getNamedTag().getString("noDamage") != null) {
+            return 0;
+        }
         return 9;
     }
 
