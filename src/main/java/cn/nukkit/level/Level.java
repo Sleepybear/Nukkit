@@ -1827,10 +1827,10 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     public Item useBreakOn(Vector3 vector, Item item, Player player, boolean createParticles) {
-        return useBreakOn(vector, null, item, player, createParticles);
+        return useBreakOn(vector, null, item, player, createParticles, false);
     }
 
-    public Item useBreakOn(Vector3 vector, BlockFace face, Item item, Player player, boolean createParticles) {
+    public Item useBreakOn(Vector3 vector, BlockFace face, Item item, Player player, boolean createParticles, boolean dropItem) {
         if (player != null && player.getGamemode() > 2) {
             return null;
         }
@@ -1968,9 +1968,11 @@ public class Level implements ChunkManager, Metadatable {
             }
 
             if (player == null || player.isSurvival()) {
-                for (Item drop : drops) {
-                    if (drop.getCount() > 0) {
-                        this.dropItem(vector.add(0.5, 0.5, 0.5), drop);
+                if(dropItem) {
+                    for (Item drop : drops) {
+                        if (drop.getCount() > 0) {
+                            this.dropItem(vector.add(0.5, 0.5, 0.5), drop);
+                        }
                     }
                 }
             }
