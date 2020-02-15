@@ -13,7 +13,6 @@ import cn.nukkit.entity.data.*;
 import cn.nukkit.entity.item.*;
 import cn.nukkit.entity.projectile.EntityArrow;
 import cn.nukkit.entity.projectile.EntityThrownTrident;
-import cn.nukkit.event.Event;
 import cn.nukkit.event.block.ItemFrameDropItemEvent;
 import cn.nukkit.event.entity.EntityDamageByBlockEvent;
 import cn.nukkit.event.entity.EntityDamageByEntityEvent;
@@ -3994,18 +3993,11 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
     //todo something on performance, lots of exp orbs then lots of packets, could crash client
 
     public void setExperience(int exp, int level) {
-        PlayerExperienceChangeEvent event = new PlayerExperienceChangeEvent(this, this.getExperienceLevel(), this.getExperience(), exp, level);
-        this.server.getPluginManager().callEvent(event);
+        this.exp = exp;
+        this.expLevel = level;
 
-        if(event.isCancelled()){
-            return;
-        }
-
-        this.exp = event.getNewProgress();
-        this.expLevel = event.getNewLevel();
-
-        this.sendExperienceLevel(this.expLevel);
-        this.sendExperience(this.exp);
+        this.sendExperienceLevel(level);
+        this.sendExperience(exp);
     }
 
     public void sendExperience() {
