@@ -24,15 +24,15 @@ public class PlayerExperienceChangeEvent extends PlayerEvent {
     }
 
     public int getOldLevel(){
-        return this.oldLevel;
+        return oldLevel;
     }
 
     public int getOldProgress(){
-        return this.oldProgress;
+        return oldProgress;
     }
 
     public int getNewLevel(){
-        return this.newLevel;
+        return newLevel;
     }
 
     public void setNewLevel(int newLevel){
