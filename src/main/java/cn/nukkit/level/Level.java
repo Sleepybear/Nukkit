@@ -1818,6 +1818,11 @@ public class Level implements ChunkManager, Metadatable {
         return this.useBreakOn(vector, null);
     }
 
+    public Item useBreakOn(Vector3 vector, boolean drop) {
+        return this.useBreakOn(vector, null, null, null, true, drop);
+    }
+
+
     public Item useBreakOn(Vector3 vector, Item item) {
         return this.useBreakOn(vector, item, null);
     }
@@ -1827,7 +1832,7 @@ public class Level implements ChunkManager, Metadatable {
     }
 
     public Item useBreakOn(Vector3 vector, Item item, Player player, boolean createParticles) {
-        return useBreakOn(vector, null, item, player, createParticles, false);
+        return useBreakOn(vector, null, item, player, createParticles, true);
     }
 
     public Item useBreakOn(Vector3 vector, BlockFace face, Item item, Player player, boolean createParticles) {

@@ -76,6 +76,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
+import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.File;
@@ -247,6 +248,9 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
     protected double lastRightClickTime = 0.0;
     protected Vector3 lastRightClickPos = null;
 
+    @Getter
+    protected boolean canDamage = true;
+
     public int getStartActionTick() {
         return startAction;
     }
@@ -286,6 +290,10 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             chest.getViewers().add(this);
         }
         this.viewingEnderChest = chest;
+    }
+
+    public void canGetDamage(boolean canDamage) {
+        this.canDamage = canDamage;
     }
 
     public TranslationContainer getLeaveMessage() {
@@ -3165,8 +3173,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                                     if ((target instanceof Player) && !this.level.getGameRules().getBoolean(GameRule.PVP)) {
                                         entityDamageByEntityEvent.setCancelled();
                                     }
-
-                                    System.out.println("Erkam is doof");
 
                                     if (!target.attack(entityDamageByEntityEvent)) {
                                         if (item.isTool() && this.isSurvival()) {

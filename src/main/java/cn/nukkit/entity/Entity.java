@@ -1024,9 +1024,15 @@ public abstract class Entity extends Location implements Metadatable {
             this.setAbsorption(Math.max(0, this.getAbsorption() + source.getDamage(EntityDamageEvent.DamageModifier.ABSORPTION)));
         }
         setLastDamageCause(source);
-        setHealth(getHealth() - source.getFinalDamage());
+        if(this instanceof Player) {
+            Player player = (Player) this;
 
-        System.out.println(source.getFinalDamage());
+            if(player.isCanDamage()) {
+                setHealth(getHealth() - source.getFinalDamage());
+            }
+        }else{
+            setHealth(getHealth() - source.getFinalDamage());
+        }
         return true;
     }
 
