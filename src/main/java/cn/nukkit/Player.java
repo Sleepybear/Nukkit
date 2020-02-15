@@ -13,7 +13,6 @@ import cn.nukkit.entity.data.*;
 import cn.nukkit.entity.item.*;
 import cn.nukkit.entity.projectile.EntityArrow;
 import cn.nukkit.entity.projectile.EntityThrownTrident;
-import cn.nukkit.event.Event;
 import cn.nukkit.event.block.ItemFrameDropItemEvent;
 import cn.nukkit.event.entity.EntityDamageByBlockEvent;
 import cn.nukkit.event.entity.EntityDamageByEntityEvent;
