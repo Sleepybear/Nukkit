@@ -3976,7 +3976,13 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             level++;
             most = calculateRequireExperience(level);
         }
-        this.setExperience(added, level);
+
+        PlayerExperienceChangeEvent event = new PlayerExperienceChangeEvent(this, this.getExperienceLevel(), this.getExperience(), added, level);
+        this.server.getPluginManager().callEvent(event);
+
+        if(event.isCancelled()) return;
+
+        this.setExperience(event.getNewProgress(), event.getNewLevel());
     }
 
     public static int calculateRequireExperience(int level) {
@@ -3996,23 +4002,11 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
     //todo something on performance, lots of exp orbs then lots of packets, could crash client
 
     public void setExperience(int exp, int level) {
-        if(this.spawned){
-            PlayerExperienceChangeEvent event = new PlayerExperienceChangeEvent(this, this.getExperienceLevel(), this.getExperience(), exp, level);
-            this.server.getPluginManager().callEvent(event);
+        this.exp = exp;
+        this.expLevel = level;
 
-            if(event.isCancelled()){
-                return;
-            }
-
-            exp = event.getNewProgress();
-            level = event.getNewLevel();
-
-            this.exp = exp;
-            this.expLevel = level;
-
-            this.sendExperienceLevel(level);
-            this.sendExperience(exp);
-        }
+        this.sendExperienceLevel(level);
+        this.sendExperience(exp);
     }
 
     public void sendExperience() {
