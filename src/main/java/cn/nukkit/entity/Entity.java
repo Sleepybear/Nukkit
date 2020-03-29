@@ -1752,12 +1752,6 @@ public abstract class Entity extends Location implements Metadatable {
         return false;
     }
 
-    public boolean isOnLadder() {
-        Block b = this.getLevelBlock();
-
-        return b.getId() == Block.LADDER;
-    }
-
     public boolean fastMove(double dx, double dy, double dz) {
         if (dx == 0 && dy == 0 && dz == 0) {
             return true;
