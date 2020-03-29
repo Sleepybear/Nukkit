@@ -9,15 +9,19 @@ import cn.nukkit.math.NukkitMath;
 import cn.nukkit.math.NukkitRandom;
 
 /**
- * @author DaPorkchop_
+ * author: MagicDroidX
+ * Nukkit Project
  */
 public class PopulatorOre extends Populator {
     private final int replaceId;
-    private final OreType[] oreTypes;
+    private OreType[] oreTypes = new OreType[0];
 
-    public PopulatorOre(int replaceId, OreType[] oreTypes) {
-        this.replaceId = replaceId;
-        this.oreTypes = oreTypes;
+    public PopulatorOre() {
+        this(Block.STONE);
+    }
+
+    public PopulatorOre(int id) {
+        this.replaceId = id;
     }
 
     @Override
@@ -37,5 +41,9 @@ public class PopulatorOre extends Populator {
                 type.spawn(level, random, replaceId, x, y, z);
             }
         }
+    }
+
+    public void setOreTypes(OreType[] oreTypes) {
+        this.oreTypes = oreTypes;
     }
 }
