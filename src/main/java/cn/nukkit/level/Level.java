@@ -2031,6 +2031,10 @@ public class Level implements ChunkManager, Metadatable {
         if (block.y > 255 || block.y < 0) {
             return null;
         }
+        
+        if (block.y > 127 && this.getDimension() == DIMENSION_NETHER) {
+            return null;
+        }
 
         if (player != null) {
             PlayerInteractEvent ev = new PlayerInteractEvent(player, item, target, face,
