@@ -78,6 +78,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.log4j.Log4j2;
 
 import java.io.File;
@@ -132,6 +133,10 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
     public int gamemode;
     public long lastBreak;
     private BlockVector3 lastBreakPosition = new BlockVector3();
+
+    @Getter
+    @Setter
+    private boolean spamBug;
 
     protected int windowCnt = 4;
 
@@ -2992,13 +2997,13 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                             int type = useItemData.actionType;
                             switch (type) {
                                 case InventoryTransactionPacket.USE_ITEM_ACTION_CLICK_BLOCK:
-                                    //// Remove if client bug is ever fixed
-                                    //boolean spamBug = (lastRightClickPos != null && System.currentTimeMillis() - lastRightClickTime < 100.0 && blockVector.distanceSquared(lastRightClickPos) < 0.00001);
-                                    //lastRightClickPos = blockVector.asVector3();
-                                    //lastRightClickTime = System.currentTimeMillis();
-                                    //if (spamBug) {
-                                    //    return;
-                                    //}
+
+
+                                 boolean spamBug = (lastRightClickPos != null && System.currentTimeMillis() - lastRightClickTime < 100.0 && blockVector.distanceSquared(lastRightClickPos) < 0.00001);
+                                 lastRightClickPos = blockVector.asVector3();
+                                 lastRightClickTime = System.currentTimeMillis();
+
+                                 this.setSpamBug(spamBug);
 
                                     this.setDataFlag(DATA_FLAGS, DATA_FLAG_ACTION, false);
 
@@ -3006,6 +3011,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                                         if (this.isCreative()) {
                                             Item i = inventory.getItemInHand();
                                             if (this.level.useItemOn(blockVector.asVector3(), i, face, useItemData.clickPos.x, useItemData.clickPos.y, useItemData.clickPos.z, this) != null) {
+                                                this.setSpamBug(false);
                                                 break packetswitch;
                                             }
                                         } else if (inventory.getItemInHand().equals(useItemData.itemInHand)) {
@@ -3013,10 +3019,11 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                                             Item oldItem = i.clone();
                                             //TODO: Implement adventure mode checks
                                             if ((i = this.level.useItemOn(blockVector.asVector3(), i, face, useItemData.clickPos.x, useItemData.clickPos.y, useItemData.clickPos.z, this)) != null) {
+                                                this.setSpamBug(false);
                                                 if (!i.equals(oldItem) || i.getCount() != oldItem.getCount()) {
                                                     inventory.setItemInHand(i);
                                                     inventory.sendHeldItem(this.getViewers().values());
-                                                }
+                                               }
                                                 break packetswitch;
                                             }
                                         }
