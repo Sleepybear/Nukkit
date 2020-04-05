@@ -92,20 +92,25 @@ public class BlockAnvil extends BlockFallable implements Faceable {
 
     @Override
     public boolean place(Item item, Block block, Block target, BlockFace face, double fx, double fy, double fz, Player player) {
-        if (!target.isTransparent() || target.getId() == Block.SNOW_LAYER) {
-            int damage = this.getDamage();
-            int[] faces = {1, 2, 3, 0};
-            this.setDamage(faces[player != null ? player.getDirection().getHorizontalIndex() : 0]);
-            if (damage >= 4 && damage <= 7) {
-                this.setDamage(this.getDamage() | 0x04);
-            } else if (damage >= 8 && damage <= 11) {
-                this.setDamage(this.getDamage() | 0x08);
-            }
-            this.getLevel().setBlock(block, this, true);
-            this.getLevel().addSound(this, Sound.RANDOM_ANVIL_LAND, 1, 0.8F);
-            return true;
+
+        int damage = this.getDamage();
+
+        int[] faces = {1, 2, 3, 0};
+
+        this.setDamage(faces[player != null ? player.getDirection().getHorizontalIndex() : 0]);
+
+        if (damage >= 4 && damage <= 7) {
+
+            this.setDamage(this.getDamage() | 0x04);
+        } else if (damage >= 8 && damage <= 11) {
+            this.setDamage(this.getDamage() | 0x08);
         }
-        return false;
+
+        this.getLevel().setBlock(block, this, true);
+        this.getLevel().addSound(this, Sound.RANDOM_ANVIL_LAND, 1, 0.8F);
+
+        return true;
+
     }
 
     @Override

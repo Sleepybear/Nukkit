@@ -3,7 +3,9 @@ package cn.nukkit.block;
 import cn.nukkit.Player;
 import cn.nukkit.item.Item;
 import cn.nukkit.item.ItemTool;
+import cn.nukkit.math.AxisAlignedBB;
 import cn.nukkit.math.BlockFace;
+import cn.nukkit.math.SimpleAxisAlignedBB;
 
 /**
  * author: MagicDroidX
@@ -19,13 +21,26 @@ public abstract class BlockSlab extends BlockTransparentMeta {
     }
 
     @Override
-    public double getMinY() {
-        return ((this.getDamage() & 0x08) > 0) ? this.y + 0.5 : this.y;
-    }
-
-    @Override
-    public double getMaxY() {
-        return ((this.getDamage() & 0x08) > 0) ? this.y + 1 : this.y + 0.5;
+    protected AxisAlignedBB recalculateBoundingBox() {
+        if ((this.getDamage() & 0x08) > 0) {
+            return new SimpleAxisAlignedBB(
+                    this.x,
+                    this.y + 0.5,
+                    this.z,
+                    this.x + 1,
+                    this.y + 1,
+                    this.z + 1
+            );
+        } else {
+            return new SimpleAxisAlignedBB(
+                    this.x,
+                    this.y,
+                    this.z,
+                    this.x + 1,
+                    this.y + 0.5,
+                    this.z + 1
+            );
+        }
     }
 
     @Override
