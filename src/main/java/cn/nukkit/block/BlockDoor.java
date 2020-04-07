@@ -226,7 +226,7 @@ public abstract class BlockDoor extends BlockTransparentMeta implements Faceable
         if (face == BlockFace.UP) {
             Block blockUp = this.up();
             Block blockDown = this.down();
-            if (!blockUp.canBeReplaced() || blockDown.isTransparent()) {
+            if (!blockUp.canBeReplaced()) {
                 return false;
             }
             int[] faces = {1, 2, 3, 0};
@@ -235,7 +235,7 @@ public abstract class BlockDoor extends BlockTransparentMeta implements Faceable
             Block left = this.getSide(player.getDirection().rotateYCCW());
             Block right = this.getSide(player.getDirection().rotateY());
             int metaUp = DOOR_TOP_BIT;
-            if (left.getId() == this.getId() || (!right.isTransparent() && left.isTransparent())) { //Door hinge
+            if (left.getId() == this.getId()) { //Door hinge
                 metaUp |= DOOR_HINGE_BIT;
             }
 

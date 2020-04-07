@@ -2162,8 +2162,13 @@ public class Level implements ChunkManager, Metadatable {
 
         if (player != null) {
             if (!player.isCreative()) {
-                if(item.hasCompoundTag() && !item.getNamedTag().getBoolean("infinite")) {
+
+                if(!item.hasCompoundTag()) {
                     item.setCount(item.getCount() - 1);
+                }else{
+                    if(!(item.getNamedTag().getInt("infinite") == 1)) {
+                        item.setCount(item.getCount() - 1);
+                    }
                 }
 
             }
