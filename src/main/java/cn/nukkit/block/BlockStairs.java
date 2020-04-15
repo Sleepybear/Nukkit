@@ -15,27 +15,17 @@ import com.nukkitx.math.vector.Vector3f;
  * Nukkit Project
  */
 public abstract class BlockStairs extends BlockTransparent implements Faceable {
+    private final static int UPSIDE_DOWN_BIT = 0b0100;
+    private final static int FACING_BITMASK = 0b0011; // Indicates which direction the full side is facing
+    private final static int[] FACES = {2, 1, 3, 0}; // E W S N
 
     public BlockStairs(Identifier id) {
         super(id);
     }
 
     @Override
-    public float getMinY() {
-        // TODO: this seems wrong
-        return this.getY() + ((getMeta() & 0x04) > 0 ? 0.5f : 0);
-    }
-
-    @Override
-    public float getMaxY() {
-        // TODO: this seems wrong
-        return this.getY() + ((getMeta() & 0x04) > 0 ? 1 : 0.5f);
-    }
-
-    @Override
     public boolean place(Item item, Block block, Block target, BlockFace face, Vector3f clickPos, Player player) {
-        int[] faces = new int[]{2, 1, 3, 0};
-        this.setMeta(faces[player != null ? player.getDirection().getHorizontalIndex() : 0]);
+        this.setMeta(FACES[player != null ? player.getDirection().getHorizontalIndex() : 0]);
         if ((clickPos.getY() > 0.5 && face != BlockFace.UP) || face == BlockFace.DOWN) {
             this.setMeta(this.getMeta() | 0x04); //Upside-down stairs
         }
@@ -63,79 +53,123 @@ public abstract class BlockStairs extends BlockTransparent implements Faceable {
     }
 
     @Override
+    public float calculateXOffset(AxisAlignedBB bb, float x) {
+        if (bb.getMaxY() <= this.getMinY() || bb.getMinY() >= this.getMaxY()) {
+            return x;
+        }
+        if (bb.getMaxZ() <= this.getMinZ() || bb.getMinZ() >= this.getMaxZ()) {
+            return x;
+        }
+        AxisAlignedBB top = getTopStair();
+        AxisAlignedBB bottom = getBottomStair();
+        if (top == null || bottom == null) return x;
+
+        float dx = top.calculateXOffset(bb, x);
+        return bottom.calculateXOffset(bb, dx);
+    }
+
+    @Override
+    public float calculateYOffset(AxisAlignedBB bb, float y) {
+        if (bb.getMaxX() <= this.getMinX() || bb.getMinX() >= this.getMaxX()) {
+            return y;
+        }
+        if (bb.getMaxZ() <= this.getMinZ() || bb.getMinZ() >= this.getMaxZ()) {
+            return y;
+        }
+        AxisAlignedBB top = getTopStair();
+        AxisAlignedBB bottom = getBottomStair();
+        if (top == null || bottom == null) return y;
+
+        if (y > 0 && bb.getMaxY() <= this.getMinY()) {
+            return bottom.calculateYOffset(bb, y);
+        }
+
+        if (y < 0 && bb.getMinY() >= this.getMinY()) {
+            return top.calculateYOffset(bb, y);
+        }
+        return y;
+    }
+
+    @Override
+    public float calculateZOffset(AxisAlignedBB bb, float z) {
+        if (bb.getMaxX() <= this.getMinX() || bb.getMinX() >= this.getMaxX()) {
+            return z;
+        }
+        if (bb.getMaxY() <= this.getMinY() || bb.getMinY() >= this.getMaxY()) {
+            return z;
+        }
+        AxisAlignedBB top = getTopStair();
+        AxisAlignedBB bottom = getBottomStair();
+        if (top == null || bottom == null) return z;
+
+        float dz = top.calculateXOffset(bb, z);
+        return bottom.calculateXOffset(bb, dz);
+    }
+
+    @Override
     public boolean collidesWithBB(AxisAlignedBB bb) {
-        int damage = this.getMeta();
-        int side = damage & 0x03;
-        float f = 0;
-        float f1 = 0.5f;
-        float f2 = 0.5f;
-        float f3 = 1;
-        if ((damage & 0x04) > 0) {
-            f = 0.5f;
-            f1 = 1;
-            f2 = 0;
-            f3 = 0.5f;
-        }
+        AxisAlignedBB topStep = getTopStair();
+        AxisAlignedBB bottomStep = getBottomStair();
 
-        if (bb.intersectsWith(new SimpleAxisAlignedBB(
-                this.getX(),
-                this.getY() + f,
-                this.getZ(),
-                this.getX() + 1,
-                this.getY() + f1,
-                this.getZ() + 1
-        ))) {
-            return true;
-        }
+        return (topStep != null && bottomStep != null) &&
+                bb.intersectsWith(topStep) || bb.intersectsWith(bottomStep);
+    }
 
-
-        if (side == 0) {
-            if (bb.intersectsWith(new SimpleAxisAlignedBB(
-                    this.getX() + 0.5f,
-                    this.getY() + f2,
-                    this.getZ(),
-                    this.getX() + 1,
-                    this.getY() + f3,
-                    this.getZ() + 1
-            ))) {
-                return true;
-            }
-        } else if (side == 1) {
-            if (bb.intersectsWith(new SimpleAxisAlignedBB(
-                    this.getX(),
-                    this.getY() + f2,
-                    this.getZ(),
-                    this.getX() + 0.5f,
-                    this.getY() + f3,
-                    this.getZ() + 1
-            ))) {
-                return true;
-            }
-        } else if (side == 2) {
-            if (bb.intersectsWith(new SimpleAxisAlignedBB(
-                    this.getX(),
-                    this.getY() + f2,
-                    this.getZ() + 0.5f,
-                    this.getX() + 1,
-                    this.getY() + f3,
-                    this.getZ() + 1
-            ))) {
-                return true;
-            }
-        } else if (side == 3) {
-            if (bb.intersectsWith(new SimpleAxisAlignedBB(
-                    this.getX(),
-                    this.getY() + f2,
-                    this.getZ(),
-                    this.getX() + 1,
-                    this.getY() + f3,
-                    this.getZ() + 0.5f
-            ))) {
-                return true;
+    private AxisAlignedBB getTopStair() {
+        if ((this.getMeta() & UPSIDE_DOWN_BIT) > 0) {
+            return new SimpleAxisAlignedBB(
+                    this.getX(), this.getY() + 0.5f, this.getZ(),
+                    this.getX() + 1, this.getY() + 1, this.getZ() + 1);
+        } else {
+            int side = this.getMeta() & FACING_BITMASK;
+            if (side == 0) {
+                return new SimpleAxisAlignedBB(
+                        this.getX() + 0.5f, this.getY() + 0.5f, this.getZ(),
+                        this.getX() + 1, this.getY() + 1, this.getZ() + 1);
+            } else if (side == 1) {
+                return new SimpleAxisAlignedBB(
+                        this.getX(), this.getY() + 0.5f, this.getZ(),
+                        this.getX() + 0.5f, this.getY() + 1, this.getZ() + 1);
+            } else if (side == 2) {
+                return new SimpleAxisAlignedBB(
+                        this.getX(), this.getY() + 0.5f, this.getZ() + 0.5f,
+                        this.getX() + 1, this.getY() + 1, this.getZ() + 1);
+            } else if (side == 3) {
+                return new SimpleAxisAlignedBB(
+                        this.getX(), this.getY() + 0.5f, this.getZ(),
+                        this.getX() + 1, this.getY() + 1, this.getZ() + 0.5f);
             }
         }
+        return null;
+    }
 
-        return false;
+    private AxisAlignedBB getBottomStair() {
+        if ((this.getMeta() & UPSIDE_DOWN_BIT) == 0) {
+            new SimpleAxisAlignedBB(
+                    this.getX(), this.getY(), this.getZ(),
+                    this.getX() + 1, this.getY() + 0.5f, this.getZ() + 1);
+        } else {
+            int side = this.getMeta() & FACING_BITMASK;
+            if (side == 0) {
+                return new SimpleAxisAlignedBB(
+                        this.getX() + 0.5f, this.getY(), this.getZ(),
+                        this.getX() + 1, this.getY() + 0.5f, this.getZ() + 1);
+            } else if (side == 1) {
+                return new SimpleAxisAlignedBB(
+                        this.getX(), this.getY(), this.getZ(),
+                        this.getX() + 0.5f, this.getY() + 0.5f, this.getZ() + 1);
+            } else if (side == 2) {
+                return new SimpleAxisAlignedBB(
+                        this.getX(), this.getY(), this.getZ() + 0.5f,
+                        this.getX() + 1, this.getY() + 0.5f, this.getZ() + 1);
+            } else if (side == 3) {
+                return new SimpleAxisAlignedBB(
+                        this.getX(), this.getY(), this.getZ(),
+                        this.getX() + 1, this.getY() + 0.5f, this.getZ() + 0.5f);
+            }
+
+        }
+        return null;
     }
 
     @Override
