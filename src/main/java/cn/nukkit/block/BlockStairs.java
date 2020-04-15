@@ -27,7 +27,7 @@ public abstract class BlockStairs extends BlockTransparent implements Faceable {
     public boolean place(Item item, Block block, Block target, BlockFace face, Vector3f clickPos, Player player) {
         this.setMeta(FACES[player != null ? player.getDirection().getHorizontalIndex() : 0]);
         if ((clickPos.getY() > 0.5 && face != BlockFace.UP) || face == BlockFace.DOWN) {
-            this.setMeta(this.getMeta() | 0x04); //Upside-down stairs
+            this.setMeta(this.getMeta() | UPSIDE_DOWN_BIT); //Upside-down stairs
         }
         this.getLevel().setBlock(block.getPosition(), this, true, true);
 
@@ -174,7 +174,7 @@ public abstract class BlockStairs extends BlockTransparent implements Faceable {
 
     @Override
     public BlockFace getBlockFace() {
-        return BlockFace.fromHorizontalIndex(this.getMeta() & 0x7);
+        return BlockFace.fromHorizontalIndex(this.getMeta() & FACING_BITMASK);
     }
 
     @Override
