@@ -6,7 +6,7 @@ import cn.nukkit.block.*;
 import cn.nukkit.blockentity.BlockEntity;
 import cn.nukkit.blockentity.ItemFrame;
 import cn.nukkit.blockentity.Lectern;
-import cn.nukkit.command.Command;
+import cn.nukkit.command.CommandUtils;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.impl.projectile.EntityArrow;
 import cn.nukkit.entity.impl.vehicle.EntityAbstractMinecart;
@@ -20,8 +20,8 @@ import cn.nukkit.event.entity.EntityDamageEvent;
 import cn.nukkit.event.inventory.InventoryCloseEvent;
 import cn.nukkit.event.player.*;
 import cn.nukkit.event.server.DataPacketReceiveEvent;
-import cn.nukkit.form.window.FormWindow;
-import cn.nukkit.form.window.FormWindowCustom;
+import cn.nukkit.form.CustomForm;
+import cn.nukkit.form.Form;
 import cn.nukkit.inventory.transaction.CraftingTransaction;
 import cn.nukkit.inventory.transaction.InventoryTransaction;
 import cn.nukkit.inventory.transaction.action.InventoryAction;
@@ -34,28 +34,25 @@ import cn.nukkit.level.gamerule.GameRules;
 import cn.nukkit.level.particle.PunchBlockParticle;
 import cn.nukkit.locale.TranslationContainer;
 import cn.nukkit.math.BlockFace;
-import cn.nukkit.network.ProtocolInfo;
 import cn.nukkit.network.protocol.types.InventoryTransactionUtils;
-import cn.nukkit.pack.Pack;
 import cn.nukkit.player.Player;
-import cn.nukkit.scheduler.AsyncTask;
-import cn.nukkit.utils.ClientChainData;
 import cn.nukkit.utils.TextFormat;
 import co.aikar.timings.Timing;
 import co.aikar.timings.Timings;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.nukkitx.math.vector.Vector3f;
 import com.nukkitx.math.vector.Vector3i;
 import com.nukkitx.nbt.tag.CompoundTag;
 import com.nukkitx.protocol.bedrock.BedrockPacket;
-import com.nukkitx.protocol.bedrock.BedrockPacketCodec;
 import com.nukkitx.protocol.bedrock.data.*;
 import com.nukkitx.protocol.bedrock.handler.BedrockPacketHandler;
 import com.nukkitx.protocol.bedrock.packet.*;
-import lombok.extern.log4j.Log4j2;
+import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 import static cn.nukkit.block.BlockIds.AIR;
 import static cn.nukkit.player.Player.CRAFTING_SMALL;
@@ -64,8 +61,8 @@ import static cn.nukkit.player.Player.DEFAULT_SPEED;
 /**
  * @author Extollite
  */
-@Log4j2
 public class PlayerPacketHandler implements BedrockPacketHandler {
+    private static final Logger log = org.apache.logging.log4j.LogManager.getLogger(PlayerPacketHandler.class);
     private final Player player;
 
     protected Vector3i lastRightClickPos = null;
@@ -406,12 +403,13 @@ public class PlayerPacketHandler implements BedrockPacketHandler {
                 player.scheduleUpdate();
                 break;
             case JUMP:
+                player.getServer().getPluginManager().callEvent(new PlayerJumpEvent(player));
                 break;
             case START_SPRINT:
                 PlayerToggleSprintEvent playerToggleSprintEvent = new PlayerToggleSprintEvent(player, true);
                 player.getServer().getPluginManager().callEvent(playerToggleSprintEvent);
                 if (playerToggleSprintEvent.isCancelled()) {
-                    player.sendData(player);
+                    player.sendFlags(player);
                 } else {
                     player.setSprinting(true);
                 }
@@ -420,7 +418,7 @@ public class PlayerPacketHandler implements BedrockPacketHandler {
                 playerToggleSprintEvent = new PlayerToggleSprintEvent(player, false);
                 player.getServer().getPluginManager().callEvent(playerToggleSprintEvent);
                 if (playerToggleSprintEvent.isCancelled()) {
-                    player.sendData(player);
+                    player.sendFlags(player);
                 } else {
                     player.setSprinting(false);
                 }
@@ -429,7 +427,7 @@ public class PlayerPacketHandler implements BedrockPacketHandler {
                     player.getServer().getPluginManager().callEvent(ptse);
 
                     if (ptse.isCancelled()) {
-                        player.sendData(player);
+                        player.sendFlags(player);
                     } else {
                         player.setSwimming(false);
                     }
@@ -439,7 +437,7 @@ public class PlayerPacketHandler implements BedrockPacketHandler {
                 PlayerToggleSneakEvent playerToggleSneakEvent = new PlayerToggleSneakEvent(player, true);
                 player.getServer().getPluginManager().callEvent(playerToggleSneakEvent);
                 if (playerToggleSneakEvent.isCancelled()) {
-                    player.sendData(player);
+                    player.sendFlags(player);
                 } else {
                     player.setSneaking(true);
                 }
@@ -448,7 +446,7 @@ public class PlayerPacketHandler implements BedrockPacketHandler {
                 playerToggleSneakEvent = new PlayerToggleSneakEvent(player, false);
                 player.getServer().getPluginManager().callEvent(playerToggleSneakEvent);
                 if (playerToggleSneakEvent.isCancelled()) {
-                    player.sendData(player);
+                    player.sendFlags(player);
                 } else {
                     player.setSneaking(false);
                 }
@@ -460,7 +458,7 @@ public class PlayerPacketHandler implements BedrockPacketHandler {
                 PlayerToggleGlideEvent playerToggleGlideEvent = new PlayerToggleGlideEvent(player, true);
                 player.getServer().getPluginManager().callEvent(playerToggleGlideEvent);
                 if (playerToggleGlideEvent.isCancelled()) {
-                    player.sendData(player);
+                    player.sendFlags(player);
                 } else {
                     player.setGliding(true);
                 }
@@ -469,7 +467,7 @@ public class PlayerPacketHandler implements BedrockPacketHandler {
                 playerToggleGlideEvent = new PlayerToggleGlideEvent(player, false);
                 player.getServer().getPluginManager().callEvent(playerToggleGlideEvent);
                 if (playerToggleGlideEvent.isCancelled()) {
-                    player.sendData(player);
+                    player.sendFlags(player);
                 } else {
                     player.setGliding(false);
                 }
@@ -485,7 +483,7 @@ public class PlayerPacketHandler implements BedrockPacketHandler {
                 player.getServer().getPluginManager().callEvent(ptse);
 
                 if (ptse.isCancelled()) {
-                    player.sendData(player);
+                    player.sendFlags(player);
                 } else {
                     player.setSwimming(true);
                 }
@@ -495,7 +493,7 @@ public class PlayerPacketHandler implements BedrockPacketHandler {
                 player.getServer().getPluginManager().callEvent(ptse);
 
                 if (ptse.isCancelled()) {
-                    player.sendData(player);
+                    player.sendFlags(player);
                 } else {
                     player.setSwimming(false);
                 }
@@ -513,21 +511,31 @@ public class PlayerPacketHandler implements BedrockPacketHandler {
             return true;
         }
 
-        FormWindow window;
-        if ((window = player.removeFormWindow(packet.getFormId())) != null) {
-            window.setResponse(packet.getFormData().trim());
+        Form<?> window = player.removeFormWindow(packet.getFormId());
 
-            PlayerFormRespondedEvent event = new PlayerFormRespondedEvent(player, packet.getFormId(), window);
-            player.getServer().getPluginManager().callEvent(event);
-        } else if ((window = player.getServerSettingById(packet.getFormId())) != null) {
-            window.setResponse(packet.getFormData().trim());
+        if (window == null) {
+            if (player.getServerSettings() != null && player.getServerSettingsId() == packet.getFormId()) {
+                window = player.getServerSettings();
+            } else {
+                return true;
+            }
+        }
 
-            PlayerSettingsRespondedEvent event = new PlayerSettingsRespondedEvent(player, packet.getFormId(), window);
-            player.getServer().getPluginManager().callEvent(event);
+        try {
+            JsonNode response = new JsonMapper().readTree(packet.getFormData());
 
-            //Set back new settings if not been cancelled
-            if (!event.isCancelled() && window instanceof FormWindowCustom)
-                ((FormWindowCustom) window).setElementsFromResponse();
+            if ("null".equals(response.asText())) {
+                window.close(player);
+            } else {
+                try {
+                    window.handleResponse(player, response);
+                } catch (Exception e) {
+                    log.error("Error while handling form response", e);
+                    window.error(player);
+                }
+            }
+        } catch (JsonProcessingException e) {
+            log.debug("Received corrupted form json data");
         }
         return true;
     }
@@ -788,7 +796,7 @@ public class PlayerPacketHandler implements BedrockPacketHandler {
                 return true;
             }
             player.setGamemode(packet.getGamemode(), true);
-            Command.broadcastCommandMessage(player, new TranslationContainer("commands.gamemode.success.self", Server.getGamemodeString(player.getGamemode())));
+            CommandUtils.broadcastCommandMessage(player, new TranslationContainer("%commands.gamemode.success.self", Server.getGamemodeString(player.getGamemode())));
         }
         return true;
     }
@@ -1198,16 +1206,19 @@ public class PlayerPacketHandler implements BedrockPacketHandler {
 
     @Override
     public boolean handle(ServerSettingsRequestPacket packet) {
-        PlayerServerSettingsRequestEvent settingsRequestEvent = new PlayerServerSettingsRequestEvent(player, new HashMap<>(player.getServerSettings()));
-        player.getServer().getPluginManager().callEvent(settingsRequestEvent);
+        CustomForm settings = player.getServerSettings();
 
-        if (!settingsRequestEvent.isCancelled()) {
-            settingsRequestEvent.getSettings().forEach((id, formWindow) -> {
-                ServerSettingsResponsePacket re = new ServerSettingsResponsePacket();
-                re.setFormId(id);
-                re.setFormData(formWindow.getJSONData());
-                player.sendPacket(re);
-            });
+        if (settings == null) {
+            return true;
+        }
+
+        try {
+            ServerSettingsResponsePacket re = new ServerSettingsResponsePacket();
+            re.setFormId(player.getServerSettingsId());
+            re.setFormData(new JsonMapper().writeValueAsString(settings));
+            player.sendPacket(re);
+        } catch (JsonProcessingException e) {
+            log.error("Error while writing form data", e);
         }
         return true;
     }

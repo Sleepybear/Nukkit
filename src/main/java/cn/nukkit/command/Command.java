@@ -1,133 +1,38 @@
 package cn.nukkit.command;
 
-import cn.nukkit.Server;
-import cn.nukkit.command.data.*;
-import cn.nukkit.locale.TextContainer;
+import cn.nukkit.command.data.CommandData;
+import cn.nukkit.command.data.CommandParameter;
 import cn.nukkit.locale.TranslationContainer;
-import cn.nukkit.permission.Permissible;
 import cn.nukkit.player.Player;
+import cn.nukkit.registry.CommandRegistry;
 import cn.nukkit.utils.TextFormat;
 import co.aikar.timings.Timing;
 import co.aikar.timings.Timings;
-import com.google.common.collect.ImmutableMap;
-import com.nukkitx.protocol.bedrock.data.CommandEnumData;
-import com.nukkitx.protocol.bedrock.data.CommandParamData;
 
-import java.util.*;
+import java.util.List;
 
 /**
- * author: MagicDroidX
- * Nukkit Project
+ * Base class for Commands. Plugins should extend {@link PluginCommand PluginCommand<T>} and not this class.
+ *
+ * @author MagicDroidX
+ * @see PluginCommand
  */
 public abstract class Command {
 
-    private static CommandData defaultDataTemplate = null;
-
-    protected CommandData commandData;
+    protected final CommandData commandData;
 
     private final String name;
 
-    private String nextLabel;
-
-    private String label;
-
-    private String[] aliases = new String[0];
-
-    private String[] activeAliases = new String[0];
-
-    private CommandMap commandMap = null;
-
-    protected String description = "";
-
-    protected String usageMessage = "";
-
-    private String permission = null;
-
-    private String permissionMessage = null;
-
-    private static final ImmutableMap<CommandParamType, CommandParamData.Type> NETWORK_TYPES = ImmutableMap.<CommandParamType, CommandParamData.Type>builder()
-            .put(CommandParamType.INT, CommandParamData.Type.INT)
-            .put(CommandParamType.FLOAT, CommandParamData.Type.FLOAT)
-            .put(CommandParamType.VALUE, CommandParamData.Type.VALUE)
-            .put(CommandParamType.WILDCARD_INT, CommandParamData.Type.WILDCARD_INT)
-            .put(CommandParamType.OPERATOR, CommandParamData.Type.OPERATOR)
-            .put(CommandParamType.TARGET, CommandParamData.Type.TARGET)
-            .put(CommandParamType.WILDCARD_TARGET, CommandParamData.Type.WILDCARD_TARGET)
-            .put(CommandParamType.FILE_PATH, CommandParamData.Type.FILE_PATH)
-            .put(CommandParamType.STRING, CommandParamData.Type.STRING)
-            .put(CommandParamType.POSITION, CommandParamData.Type.POSITION)
-            .put(CommandParamType.MESSAGE, CommandParamData.Type.MESSAGE)
-            .put(CommandParamType.TEXT, CommandParamData.Type.TEXT)
-            .put(CommandParamType.JSON, CommandParamData.Type.JSON)
-            .put(CommandParamType.COMMAND, CommandParamData.Type.COMMAND)
-            .put(CommandParamType.RAWTEXT, CommandParamData.Type.TEXT)
-
-            .build();
-
     public Timing timing;
 
-    public Command(String name) {
-        this(name, "", null, new String[0]);
+    public Command(CommandData data) {
+        this(data.getRegisteredName(), data);
     }
 
-    public Command(String name, String description) {
-        this(name, description, null, new String[0]);
-    }
-
-    public Command(String name, String description, String usageMessage) {
-        this(name, description, usageMessage, new String[0]);
-    }
-
-    protected List<CommandParameter[]> commandParameters = new ArrayList<>();
-
-    /**
-     * Returns an CommandData containing command data
-     *
-     * @return CommandData
-     */
-    public CommandData getDefaultCommandData() {
-        return this.commandData;
-    }
-
-    public Command(String name, String description, String usageMessage, String[] aliases) {
-        this.commandData = new CommandData();
-        this.name = name.toLowerCase(); // Uppercase letters crash the client?!?
-        this.nextLabel = name;
-        this.label = name;
-        this.description = description;
-        this.usageMessage = usageMessage == null ? "/" + name : usageMessage;
-        this.aliases = aliases;
-        this.activeAliases = aliases;
+    public Command(String name, CommandData data) {
+        this.name = name.toLowerCase(); // Uppercase letters crash the client?
+        this.commandData = data;
         this.timing = Timings.getCommandTiming(this);
-        this.commandParameters.add(new CommandParameter[]{new CommandParameter("args", CommandParamType.RAWTEXT, true)});
-    }
-
-    public static CommandData generateDefaultData() {
-        if (defaultDataTemplate == null) {
-            //defaultDataTemplate = new Gson().fromJson(new InputStreamReader(Server.class.getClassLoader().getResourceAsStream("command_default.json")));
-        }
-        return defaultDataTemplate;
-    }
-
-    private static CommandParamData toNetwork(CommandParameter commandParameter) {
-        return new CommandParamData(commandParameter.name, commandParameter.optional,
-                toNetwork(commandParameter.enumData), NETWORK_TYPES.get(commandParameter.type),
-                commandParameter.postFix, Collections.emptyList());
-    }
-
-    private static CommandEnumData toNetwork(CommandEnum commandEnum) {
-        if (commandEnum == null) {
-            return null;
-        }
-        return new CommandEnumData(commandEnum.getName(), commandEnum.getValues().toArray(new String[0]), false);
-    }
-
-    public CommandParameter[] getCommandParameters(int key) {
-        return commandParameters.get(key);
-    }
-
-    public Map<String, CommandOverload> getOverloads() {
-        return this.commandData.overloads;
     }
 
     public abstract boolean execute(CommandSender sender, String commandLabel, String[] args);
@@ -136,12 +41,19 @@ public abstract class Command {
         return name;
     }
 
-    public String getPermission() {
-        return permission;
+    public String getRegisteredName() {
+        return this.commandData.getRegisteredName();
     }
 
-    public void setPermission(String permission) {
-        this.permission = permission;
+    public void setRegisteredName(String name) {
+        if (CommandRegistry.get().isClosed()) {
+            throw new IllegalStateException("Trying to set registered command name outside of registration period.");
+        }
+        this.commandData.setRegisteredName(name);
+    }
+
+    public List<String> getPermissions() {
+        return this.commandData.getPermissions();
     }
 
     public boolean testPermission(CommandSender target) {
@@ -149,22 +61,21 @@ public abstract class Command {
             return true;
         }
 
-        if (this.permissionMessage == null) {
+        if (this.commandData.getPermissionMessage().equals("")) {
             target.sendMessage(new TranslationContainer(TextFormat.RED + "%commands.generic.unknown", this.name));
-        } else if (!this.permissionMessage.equals("")) {
-            target.sendMessage(this.permissionMessage.replace("<permission>", this.permission));
+        } else {
+            target.sendMessage(this.commandData.getPermissionMessage());
         }
 
         return false;
     }
 
     public boolean testPermissionSilent(CommandSender target) {
-        if (this.permission == null || this.permission.equals("")) {
+        if (this.commandData.getPermissions().size() == 0) {
             return true;
         }
 
-        String[] permissions = this.permission.split(";");
-        for (String permission : permissions) {
+        for (String permission : this.commandData.getPermissions()) {
             if (target.hasPermission(permission)) {
                 return true;
             }
@@ -174,140 +85,31 @@ public abstract class Command {
     }
 
     public String getLabel() {
-        return label;
-    }
-
-    public boolean setLabel(String name) {
-        this.nextLabel = name;
-        if (!this.isRegistered()) {
-            this.label = name;
-            this.timing = Timings.getCommandTiming(this);
-            return true;
-        }
-        return false;
-    }
-
-    public boolean register(CommandMap commandMap) {
-        if (this.allowChangesFrom(commandMap)) {
-            this.commandMap = commandMap;
-            return true;
-        }
-        return false;
-    }
-
-    public boolean unregister(CommandMap commandMap) {
-        if (this.allowChangesFrom(commandMap)) {
-            this.commandMap = null;
-            this.activeAliases = this.aliases;
-            this.label = this.nextLabel;
-            return true;
-        }
-        return false;
-    }
-
-    public boolean allowChangesFrom(CommandMap commandMap) {
-        return commandMap != null && !commandMap.equals(this.commandMap);
-    }
-
-    public boolean isRegistered() {
-        return this.commandMap != null;
+        return getName();
     }
 
     public String[] getAliases() {
-        return this.activeAliases;
+        return this.commandData.getAliases().toArray(new String[0]);
     }
 
     public String getPermissionMessage() {
-        return permissionMessage;
+        return commandData.getPermissionMessage();
     }
 
     public String getDescription() {
-        return description;
+        return this.commandData.getDescription();
     }
 
     public String getUsage() {
-        return usageMessage;
-    }
-
-    public void setAliases(String[] aliases) {
-        this.aliases = aliases;
-        if (!this.isRegistered()) {
-            this.activeAliases = aliases;
-        }
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public void setPermissionMessage(String permissionMessage) {
-        this.permissionMessage = permissionMessage;
-    }
-
-    public void setUsage(String usageMessage) {
-        this.usageMessage = usageMessage;
+        return this.commandData.getUsage();
     }
 
     public List<CommandParameter[]> getCommandParameters() {
-        return commandParameters;
+        return this.commandData.getOverloads();
     }
 
-    public static void broadcastCommandMessage(CommandSender source, String message) {
-        broadcastCommandMessage(source, message, true);
-    }
-
-    public static void broadcastCommandMessage(CommandSender source, String message, boolean sendToSource) {
-        Set<Permissible> users = source.getServer().getPluginManager().getPermissionSubscriptions(Server.BROADCAST_CHANNEL_ADMINISTRATIVE);
-
-        TranslationContainer result = new TranslationContainer("chat.type.admin", source.getName(), message);
-
-        TranslationContainer colored = new TranslationContainer(TextFormat.GRAY + "" + TextFormat.ITALIC + "%chat.type.admin", source.getName(), message);
-
-        if (sendToSource && !(source instanceof ConsoleCommandSender)) {
-            source.sendMessage(message);
-        }
-
-        for (Permissible user : users) {
-            if (user instanceof CommandSender) {
-                if (user instanceof ConsoleCommandSender) {
-                    ((ConsoleCommandSender) user).sendMessage(result);
-                } else if (!user.equals(source)) {
-                    ((CommandSender) user).sendMessage(colored);
-                }
-            }
-        }
-    }
-
-    public static void broadcastCommandMessage(CommandSender source, TextContainer message) {
-        broadcastCommandMessage(source, message, true);
-    }
-
-    public static void broadcastCommandMessage(CommandSender source, TextContainer message, boolean sendToSource) {
-        TextContainer m = message.clone();
-        String resultStr = "[" + source.getName() + ": " + (!m.getText().equals(source.getServer().getLanguage().get(m.getText())) ? "%" : "") + m.getText() + "]";
-
-        Set<Permissible> users = source.getServer().getPluginManager().getPermissionSubscriptions(Server.BROADCAST_CHANNEL_ADMINISTRATIVE);
-
-        String coloredStr = TextFormat.GRAY + "" + TextFormat.ITALIC + resultStr;
-
-        m.setText(resultStr);
-        TextContainer result = m.clone();
-        m.setText(coloredStr);
-        TextContainer colored = m.clone();
-
-        if (sendToSource && !(source instanceof ConsoleCommandSender)) {
-            source.sendMessage(message);
-        }
-
-        for (Permissible user : users) {
-            if (user instanceof CommandSender) {
-                if (user instanceof ConsoleCommandSender) {
-                    ((ConsoleCommandSender) user).sendMessage(result);
-                } else if (!user.equals(source)) {
-                    ((CommandSender) user).sendMessage(colored);
-                }
-            }
-        }
+    public void removeAlias(String alias) {
+        this.commandData.removeAlias(alias);
     }
 
     @Override
@@ -315,52 +117,19 @@ public abstract class Command {
         return this.name;
     }
 
-    public void setCommandParameters(List<CommandParameter[]> parameters) {
-        this.commandParameters = parameters;
-    }
-
-    public void addCommandParameters(CommandParameter[] parameters) {
-        this.commandParameters.add(parameters);
-    }
-
     /**
-     * Generates modified command data for the specified player
-     * for AvailableCommandsPacket.
+     * Generates the {@link com.nukkitx.protocol.bedrock.data.CommandData CommandData} used
+     * in {@link com.nukkitx.protocol.bedrock.packet.AvailableCommandsPacket AvailableCommandsPacket} which
+     * sends the Command data to a client. If the player does not have permission to use this Command,
+     * <code>null</code> will be returned.
      *
      * @param player player
      * @return CommandData|null
      */
-    public com.nukkitx.protocol.bedrock.data.CommandData generateCustomCommandData(Player player) {
+    public com.nukkitx.protocol.bedrock.data.CommandData toNetwork(Player player) {
         if (!this.testPermission(player)) {
             return null;
         }
-
-        String[] aliasesEnum;
-        if (getAliases().length > 0) {
-            Set<String> aliasList = new HashSet<>();
-            Collections.addAll(aliasList, this.getAliases());
-            aliasList.add(this.name.toLowerCase());
-
-            aliasesEnum = aliasList.toArray(new String[0]);
-        } else {
-            aliasesEnum = new String[]{this.name.toLowerCase()};
-        }
-        CommandEnumData aliases = new CommandEnumData(this.name.toLowerCase() + "Aliases", aliasesEnum, false);
-
-        String description = player.getServer().getLanguage().translateOnly("nukkit.", this.description);
-
-        CommandParamData[][] overloads = new CommandParamData[this.commandParameters.size()][];
-
-        for (int i = 0; i < overloads.length; i++) {
-            CommandParameter[] parameters = this.commandParameters.get(i);
-            CommandParamData[] params = new CommandParamData[parameters.length];
-            for (int i2 = 0; i2 < parameters.length; i2++) {
-                params[i2] = toNetwork(parameters[i2]);
-            }
-            overloads[i] = params;
-        }
-
-        return new com.nukkitx.protocol.bedrock.data.CommandData(this.name.toLowerCase(), description, Collections.emptyList(),
-                (byte) 0, aliases, overloads);
+        return this.commandData.toNetwork();
     }
 }

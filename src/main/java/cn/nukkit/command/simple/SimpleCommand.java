@@ -3,25 +3,34 @@ package cn.nukkit.command.simple;
 import cn.nukkit.command.Command;
 import cn.nukkit.command.CommandSender;
 import cn.nukkit.command.ConsoleCommandSender;
+import cn.nukkit.command.data.CommandData;
+import cn.nukkit.command.data.CommandParameter;
 import cn.nukkit.locale.TranslationContainer;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.Level;
 
 import java.lang.reflect.Method;
+import java.util.List;
 
 /**
  * @author Tee7even
  */
 @Log4j2
 public class SimpleCommand extends Command {
-    private Object object;
-    private Method method;
+    private final Object object;
+    private final Method method;
     private boolean forbidConsole;
     private int maxArgs;
     private int minArgs;
 
-    public SimpleCommand(Object object, Method method, String name, String description, String usageMessage, String[] aliases) {
-        super(name, description, usageMessage, aliases);
+    public SimpleCommand(Object object, Method method, String name, String description, String usageMessage, String[] aliases, String permissions, List<CommandParameter[]> parameters) {
+        super(CommandData.builder(name)
+                .setDescription(description)
+                .setUsageMessage(usageMessage)
+                .setAliases(aliases)
+                .setPermissions(permissions)
+                .setParameters(parameters)
+                .build());
         this.object = object;
         this.method = method;
     }
@@ -38,28 +47,20 @@ public class SimpleCommand extends Command {
         this.minArgs = minArgs;
     }
 
-    public void sendUsageMessage(CommandSender sender) {
-        if (!this.usageMessage.equals("")) {
-            sender.sendMessage(new TranslationContainer("commands.generic.usage", this.usageMessage));
-        }
-    }
-
     public void sendInGameMessage(CommandSender sender) {
-        sender.sendMessage(new TranslationContainer("commands.generic.ingame"));
+        sender.sendMessage(new TranslationContainer("commands.locate.fail.noplayer"));
     }
 
     @Override
     public boolean execute(CommandSender sender, String commandLabel, String[] args) {
         if (this.forbidConsole && sender instanceof ConsoleCommandSender) {
             this.sendInGameMessage(sender);
-            return false;
+            return true;
         } else if (!this.testPermission(sender)) {
-            return false;
+            return true;
         } else if (this.maxArgs != 0 && args.length > this.maxArgs) {
-            this.sendUsageMessage(sender);
             return false;
         } else if (this.minArgs != 0 && args.length < this.minArgs) {
-            this.sendUsageMessage(sender);
             return false;
         }
 
@@ -70,11 +71,6 @@ public class SimpleCommand extends Command {
         } catch (Exception exception) {
             log.throwing(Level.ERROR, exception);
         }
-
-        if (!success) {
-            this.sendUsageMessage(sender);
-        }
-
         return success;
     }
 }
