@@ -16,6 +16,8 @@ import cn.nukkit.item.Item;
 import cn.nukkit.item.ItemTurtleShell;
 import cn.nukkit.item.enchantment.Enchantment;
 import cn.nukkit.level.GameRule;
+import cn.nukkit.level.Location;
+import cn.nukkit.level.Position;
 import cn.nukkit.level.format.FullChunk;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.tag.CompoundTag;
@@ -27,10 +29,8 @@ import cn.nukkit.potion.Effect;
 import cn.nukkit.utils.BlockIterator;
 import co.aikar.timings.Timings;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * author: MagicDroidX
@@ -137,9 +137,15 @@ public abstract class EntityLiving extends Entity implements EntityDamageable {
                     this.setOnFire(2 * this.server.getDifficulty());
                 }
 
+                Location oldLocation = this.getLocation();
+
                 double deltaX = this.x - damager.x;
                 double deltaZ = this.z - damager.z;
-                this.knockBack(damager, source.getDamage(), deltaX, deltaZ, ((EntityDamageByEntityEvent) source).getKnockBack());
+
+              //  this.knockBack(damager, source.getDamage(), deltaX, deltaZ, ((EntityDamageByEntityEvent) source).getKnockBack());
+
+                assert damager instanceof Player;
+                this.doKnockBack((Player) damager, (Player) this, 0.39f, 0.35f);
             }
 
             EntityEventPacket pk = new EntityEventPacket();
@@ -199,6 +205,7 @@ public abstract class EntityLiving extends Entity implements EntityDamageable {
                 motion.y += 0.08;
                 motion.z += Math.cos(attacker.getLocation().getYaw() * 3.1415927410125732 / 180) * 1.0 * 0.2;
             }
+
 
             this.setMotion(motion);
         }
@@ -417,4 +424,45 @@ public abstract class EntityLiving extends Entity implements EntityDamageable {
     public void setAirTicks(int ticks) {
         this.setDataProperty(new ShortEntityData(DATA_AIR, ticks));
     }
+
+
+    public void doKnockBack(Player damager, Player damaged, float xzKB, float yKB) {
+
+        if (damager != null && damaged != null) {
+
+            double movementX = (damaged.x - damager.x) * xzKB;
+            double movementZ = (damaged.z - damager.z) * xzKB;
+
+            double enchant = damager.getInventory().getItemInHand().getEnchantment(Enchantment.ID_KNOCKBACK) != null ? damager.getInventory().getItemInHand().getEnchantment(Enchantment.ID_KNOCKBACK).getLevel() * 0.32 : 0;
+
+            Vector3 kb = this.setPlayerKnockback(damaged, (float) movementX, yKB, (float) movementZ, (float) (xzKB + enchant));
+
+            damaged.setMotion(kb);
+        }
+    }
+
+    private Vector3 setPlayerKnockback(Entity damaged, float x, float y, float z, float base) {
+
+        double f = Math.sqrt((double)(x * x + z * z));
+
+        Vector3 motion = new Vector3(damaged.motionX, damaged.motionY, damaged.motionZ);
+
+        if (f > 0.0D) {
+            f = 1.0D / f;
+        } else {
+            f = 0;
+        }
+        motion.x /= 2.0D;
+        motion.y /= 2.0D;
+        motion.z /= 2.0D;
+        motion.x += (double)x * f * (double)base;
+        motion.y += (double)y;
+        motion.z += (double)z * f * (double)base;
+        if (motion.y > y) {
+            motion.y = y;
+        }
+
+        return motion;
+    }
+
 }

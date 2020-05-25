@@ -196,18 +196,18 @@ public abstract class BlockDoor extends BlockTransparentMeta implements Faceable
 
     @Override
     public int onUpdate(int type) {
-        if (type == Level.BLOCK_UPDATE_NORMAL) {
-            if (this.down().getId() == AIR) {
-                Block up = this.up();
+       if (type == Level.BLOCK_UPDATE_NORMAL) {
+           if (this.down().getId() == AIR && this.up().getId() == AIR) {
+               Block up = this.up();
 
-                if (up instanceof BlockDoor) {
-                    this.getLevel().setBlock(up, Block.get(BlockID.AIR), false);
-                    this.getLevel().useBreakOn(this);
-                }
+               if (up instanceof BlockDoor) {
+                   this.getLevel().setBlock(up, Block.get(BlockID.AIR), false);
+                   this.getLevel().useBreakOn(this);
+               }
 
-                return Level.BLOCK_UPDATE_NORMAL;
-            }
-        }
+               return Level.BLOCK_UPDATE_NORMAL;
+           }
+       }
 
         if (type == Level.BLOCK_UPDATE_REDSTONE) {
             if ((!isOpen() && this.level.isBlockPowered(this.getLocation())) || (isOpen() && !this.level.isBlockPowered(this.getLocation()))) {

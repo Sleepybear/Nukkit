@@ -70,6 +70,7 @@ import co.aikar.timings.Timing;
 import co.aikar.timings.Timings;
 import com.google.common.base.Strings;
 import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.HashBiMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
@@ -257,6 +258,10 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
     @Getter
     protected boolean canDamage = true;
+
+    @Getter
+    @Setter
+    protected boolean canSpam = true;
 
     public int getStartActionTick() {
         return startAction;
@@ -848,6 +853,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
     }
 
     protected void doFirstSpawn() {
+
         this.spawned = true;
 
         this.setEnableClientCommand(true);
@@ -2019,6 +2025,9 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
         spawnPosition = this.getSpawn();
 
+
+        Position spawn = spawnPosition;
+
         StartGamePacket startGamePacket = new StartGamePacket();
         startGamePacket.entityUniqueId = this.id;
         startGamePacket.entityRuntimeId = this.id;
@@ -2032,9 +2041,9 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
         startGamePacket.dimension = /*(byte) (this.level.getDimension() & 0xff)*/0;
         startGamePacket.worldGamemode = getClientFriendlyGamemode(this.gamemode);
         startGamePacket.difficulty = this.server.getDifficulty();
-        startGamePacket.spawnX = spawnPosition.getFloorX();
-        startGamePacket.spawnY = spawnPosition.getFloorY();
-        startGamePacket.spawnZ = spawnPosition.getFloorZ();
+        startGamePacket.spawnX = spawn.getFloorX();
+        startGamePacket.spawnY = spawn.getFloorY();
+        startGamePacket.spawnZ = spawn.getFloorZ();
         startGamePacket.hasAchievementsDisabled = true;
         startGamePacket.dayCycleStopTime = -1;
         startGamePacket.rainLevel = 0;
@@ -2048,6 +2057,7 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
         this.dataPacket(new BiomeDefinitionListPacket());
         this.dataPacket(new AvailableEntityIdentifiersPacket());
+
 
         this.loggedIn = true;
 
@@ -3011,11 +3021,13 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
                                 case InventoryTransactionPacket.USE_ITEM_ACTION_CLICK_BLOCK:
 
 
-                                 boolean spamBug = (lastRightClickPos != null && System.currentTimeMillis() - lastRightClickTime < 100.0 && blockVector.distanceSquared(lastRightClickPos) < 0.00001);
-                                 lastRightClickPos = blockVector.asVector3();
-                                 lastRightClickTime = System.currentTimeMillis();
+                                    boolean spamBug = (lastRightClickPos != null && System.currentTimeMillis() - lastRightClickTime < 100.0 && blockVector.distanceSquared(lastRightClickPos) < 0.00001);
+                                    lastRightClickPos = blockVector.asVector3();
+                                    lastRightClickTime = System.currentTimeMillis();
 
-                                 this.setSpamBug(spamBug);
+                                    if(spamBug && !this.isSpamBug()) {
+                                        return;
+                                    }
 
                                     this.setDataFlag(DATA_FLAGS, DATA_FLAG_ACTION, false);
 
@@ -3613,6 +3625,9 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             PlayerQuitEvent ev = null;
             if (this.getName() != null && this.getName().length() > 0) {
                 this.server.getPluginManager().callEvent(ev = new PlayerQuitEvent(this, message, true, reason));
+
+                this.server.removeBeforeSpawn(this.getLoginChainData().getClientUUID().toString());
+
                 if (this.loggedIn && ev.getAutoSave()) {
                     this.save();
                 }
@@ -3898,7 +3913,6 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
             }
         }
 
-        this.server.getPluginManager().callEvent(ev);
 
         if (!ev.isCancelled()) {
             if (this.fishing != null) {
@@ -3944,6 +3958,8 @@ public class Player extends EntityHuman implements CommandSender, InventoryHolde
 
             this.dataPacket(pk);
         }
+
+        this.server.getPluginManager().callEvent(ev);
     }
 
     protected void respawn() {

@@ -26,10 +26,7 @@ import cn.nukkit.item.enchantment.Enchantment;
 import cn.nukkit.lang.BaseLang;
 import cn.nukkit.lang.TextContainer;
 import cn.nukkit.lang.TranslationContainer;
-import cn.nukkit.level.EnumLevel;
-import cn.nukkit.level.GlobalBlockPalette;
-import cn.nukkit.level.Level;
-import cn.nukkit.level.Position;
+import cn.nukkit.level.*;
 import cn.nukkit.level.biome.EnumBiome;
 import cn.nukkit.level.format.LevelProvider;
 import cn.nukkit.level.format.LevelProviderManager;
@@ -40,6 +37,7 @@ import cn.nukkit.level.generator.Flat;
 import cn.nukkit.level.generator.Generator;
 import cn.nukkit.level.generator.Nether;
 import cn.nukkit.level.generator.Normal;
+import cn.nukkit.level.generator.populator.impl.tree.SavannaTreePopulator;
 import cn.nukkit.math.NukkitMath;
 import cn.nukkit.metadata.EntityMetadataStore;
 import cn.nukkit.metadata.LevelMetadataStore;
@@ -208,6 +206,8 @@ public class Server {
     private final Map<InetSocketAddress, Player> players = new HashMap<>();
 
     private final Map<UUID, Player> playerList = new HashMap<>();
+
+    private final Map<String, Location> spawnBeforeLogin = new HashMap<>();
 
     private final Map<Integer, Level> levels = new HashMap<Integer, Level>() {
         public Level put(Integer key, Level value) {
@@ -1613,6 +1613,18 @@ public class Server {
         return getOfflinePlayerDataInternal(uuid.map(UUID::toString).orElse(name), true, create);
     }
 
+    public void setSpawnBeforeLogin(String name, Location location) {
+        this.spawnBeforeLogin.put(name, location);
+    }
+
+    public void removeBeforeSpawn(String name) {
+        this.spawnBeforeLogin.remove(name);
+    }
+
+    public Location getSpawnBeforeLogin(String name) {
+        return this.spawnBeforeLogin.get(name);
+    }
+
     private CompoundTag getOfflinePlayerDataInternal(String name, boolean runEvent, boolean create) {
         Preconditions.checkNotNull(name, "name");
 
@@ -1644,7 +1656,9 @@ public class Server {
             if (this.shouldSavePlayerData()) {
                 log.info(this.getLanguage().translateString("nukkit.data.playerNotFound", name));
             }
-            Position spawn = this.getDefaultLevel().getSafeSpawn();
+
+            Position spawn = this.getSpawnBeforeLogin(name) == null ? this.getDefaultLevel().getSafeSpawn() : this.getSpawnBeforeLogin(name);
+
             nbt = new CompoundTag()
                     .putLong("firstPlayed", System.currentTimeMillis() / 1000)
                     .putLong("lastPlayed", System.currentTimeMillis() / 1000)

@@ -2,9 +2,7 @@ package cn.nukkit.level;
 
 import cn.nukkit.Player;
 import cn.nukkit.Server;
-import cn.nukkit.block.Block;
-import cn.nukkit.block.BlockID;
-import cn.nukkit.block.BlockRedstoneDiode;
+import cn.nukkit.block.*;
 import cn.nukkit.blockentity.BlockEntity;
 import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.item.EntityItem;
@@ -1916,15 +1914,19 @@ public class Level implements ChunkManager, Metadatable {
             BlockBreakEvent ev = new BlockBreakEvent(player, target, face, item, eventDrops, player.isCreative(),
                     (player.lastBreak + breakTime * 1000) > System.currentTimeMillis());
 
+            boolean nuker = false;
+
             if (player.isSurvival() && !target.isBreakable(item)) {
                 ev.setCancelled();
             } else if(!player.isOp() && isInSpawnRadius(target)) {
                 ev.setCancelled();
             } else if (!ev.getInstaBreak() && ev.isFastBreak()) {
+                nuker = true;
                 ev.setCancelled();
             }
 
             this.server.getPluginManager().callEvent(ev);
+
             if (ev.isCancelled()) {
                 return null;
             }

@@ -35,10 +35,12 @@ import co.aikar.timings.Timing;
 import co.aikar.timings.Timings;
 import co.aikar.timings.TimingsHistory;
 import com.google.common.collect.Iterables;
+import lombok.Getter;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 import static cn.nukkit.network.protocol.SetEntityLinkPacket.*;
 
@@ -333,7 +335,9 @@ public abstract class Entity extends Location implements Metadatable {
 
     protected float absorption = 0;
 
-    protected float ySize = 0;
+    @Getter
+    public float ySize = 0;
+
     public boolean keepMovement = false;
 
     public float fallDistance = 0;
