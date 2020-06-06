@@ -142,10 +142,10 @@ public abstract class EntityLiving extends Entity implements EntityDamageable {
                 double deltaX = this.x - damager.x;
                 double deltaZ = this.z - damager.z;
 
-              //  this.knockBack(damager, source.getDamage(), deltaX, deltaZ, ((EntityDamageByEntityEvent) source).getKnockBack());
+                this.knockBack(damager, source.getDamage(), deltaX, deltaZ, ((EntityDamageByEntityEvent) source).getKnockBack());
 
-                assert damager instanceof Player;
-                this.doKnockBack((Player) damager, (Player) this, 0.39f, 0.35f);
+                // assert damager instanceof Player;
+                // this.doKnockBack((Player) damager, (Player) this, 0.39f, 0.35f);
             }
 
             EntityEventPacket pk = new EntityEventPacket();
