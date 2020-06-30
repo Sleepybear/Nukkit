@@ -500,7 +500,6 @@ public class PlayerInventory extends BaseInventory {
     @Override
     public void onOpen(Player who) {
         super.onOpen(who);
-        if (who.spawned) {
             ContainerOpenPacket pk = new ContainerOpenPacket();
             pk.windowId = who.getWindowId(this);
             pk.type = this.getType().getNetworkType();
@@ -509,7 +508,6 @@ public class PlayerInventory extends BaseInventory {
             pk.z = who.getFloorZ();
             pk.entityId = who.getId();
             who.dataPacket(pk);
-        }
     }
 
     @Override
